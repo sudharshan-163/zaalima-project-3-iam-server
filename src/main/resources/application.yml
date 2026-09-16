@@ -2,15 +2,15 @@ spring:
   application:
     name: iam-server
 
-  # PostgreSQL configuration will be added in the next step.
-  # datasource:
-  #   url: jdbc:postgresql://localhost:5432/zaalima_iam
-  #   username: postgres
-  #   password: your_password
-  # jpa:
-  #   hibernate:
-  #     ddl-auto: update
-  #   show-sql: true
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:5432/zaalima_iam
+    username: postgres
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
 
 server:
-  port: 8080
+  port: 8085
