@@ -202,6 +202,25 @@ class UserServiceTest {
     }
 
     @Test
+    void getUserProfile_shouldReturnDisabledUserProfile() {
+
+        User user = new User();
+        user.setId(2L);
+        user.setUsername("disableduser");
+        user.setEmail("disabled@example.com");
+        user.setEnabled(false);
+
+        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
+
+        UserProfileResponse response = userService.getUserProfile(2L);
+
+        assertNotNull(response);
+        assertEquals(2L, response.getId());
+        assertEquals("disableduser", response.getUsername());
+        assertEquals("disabled@example.com", response.getEmail());
+        assertFalse(response.isEnabled());
+    }
+    @Test
     void getUserProfile_shouldThrowExceptionWhenUserNotFound() {
 
         when(userRepository.findById(999L)).thenReturn(Optional.empty());
@@ -288,3 +307,4 @@ class UserServiceTest {
         verify(userRepository, never()).save(any(User.class));
     }
 }
+
