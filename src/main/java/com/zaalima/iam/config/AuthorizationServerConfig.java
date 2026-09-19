@@ -21,6 +21,8 @@ import org.springframework.security.oauth2.server.authorization.config.annotatio
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
+import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
+import com.zaalima.iam.service.OidcUserInfoService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -38,7 +40,8 @@ public class AuthorizationServerConfig {
     @Bean
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(
-            HttpSecurity http) throws Exception {
+            HttpSecurity http,
+            OidcUserInfoService oidcUserInfoService) throws Exception {
 
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
                 new OAuth2AuthorizationServerConfigurer();
@@ -51,7 +54,14 @@ public class AuthorizationServerConfig {
                 .with(
                         authorizationServerConfigurer,
                         authorizationServer -> authorizationServer
-                                .oidc(withDefaults())
+                                .oidc(oidc -> oidc
+                                        .userInfoEndpoint(userInfoEndpoint -> userInfoEndpoint
+                                                .userInfoMapper(context -> new OidcUserInfo(
+                                                        oidcUserInfoService.getUserInfo(
+                                                                context.getAuthorization().getPrincipalName()
+                                                        )
+                                                ))
+                                        ))
                 )
                 .authorizeHttpRequests(authorize ->
                         authorize.anyRequest().authenticated())
@@ -144,5 +154,10 @@ public class AuthorizationServerConfig {
         }
     }
 }
+
+
+
+
+
 
 
