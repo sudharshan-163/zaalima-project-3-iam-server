@@ -1,5 +1,6 @@
 package com.zaalima.iam.service;
 
+import com.zaalima.iam.entity.Authority;
 import com.zaalima.iam.entity.Role;
 import com.zaalima.iam.entity.User;
 import com.zaalima.iam.repository.UserRepository;
@@ -54,6 +55,50 @@ class CustomUserDetailsServiceTest {
         );
 
         verify(userRepository).findByUsername("sudharshan");
+    }
+
+    @Test
+    void shouldMapRoleAndAuthoritiesToGrantedAuthorities() {
+        User user = new User();
+        user.setUsername("vinay");
+        user.setPassword("$2a$10$hashedPassword");
+        user.setEnabled(true);
+
+        Role role = new Role();
+        role.setName("USER");
+
+        Authority readProfile = new Authority();
+        readProfile.setName("READ_PROFILE");
+
+        Authority updateProfile = new Authority();
+        updateProfile.setName("UPDATE_PROFILE");
+
+        role.getAuthorities().add(readProfile);
+        role.getAuthorities().add(updateProfile);
+        user.getRoles().add(role);
+
+        when(userRepository.findByUsername("vinay"))
+                .thenReturn(Optional.of(user));
+
+        UserDetails userDetails =
+                customUserDetailsService.loadUserByUsername("vinay");
+
+        assertEquals(3, userDetails.getAuthorities().size());
+
+        assertTrue(
+                userDetails.getAuthorities().stream()
+                        .anyMatch(a -> a.getAuthority().equals("ROLE_USER"))
+        );
+
+        assertTrue(
+                userDetails.getAuthorities().stream()
+                        .anyMatch(a -> a.getAuthority().equals("READ_PROFILE"))
+        );
+
+        assertTrue(
+                userDetails.getAuthorities().stream()
+                        .anyMatch(a -> a.getAuthority().equals("UPDATE_PROFILE"))
+        );
     }
 
     @Test
