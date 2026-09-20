@@ -1,10 +1,11 @@
 package com.zaalima.iam.config;
 
-import com.zaalima.iam.dto.UserRegistrationRequest;
-import com.zaalima.iam.dto.UserRegistrationResponse;
-import com.zaalima.iam.entity.User;
-import com.zaalima.iam.repository.UserRepository;
-import com.zaalima.iam.service.UserService;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import com.zaalima.iam.dto.UserRegistrationRequest;
+import com.zaalima.iam.dto.UserRegistrationResponse;
+import com.zaalima.iam.entity.User;
+import com.zaalima.iam.repository.UserRepository;
+import com.zaalima.iam.service.UserService;
 
 @SpringBootTest
 class AuthenticationIntegrationTest {
