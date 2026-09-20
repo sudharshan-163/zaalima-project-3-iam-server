@@ -54,6 +54,9 @@ public class AuthorizationServerConfig {
                 .with(
                         authorizationServerConfigurer,
                         authorizationServer -> authorizationServer
+                                .authorizationEndpoint(authorizationEndpoint ->
+                                        authorizationEndpoint.consentPage("/oauth2/consent")
+                                )
                                 .oidc(oidc -> oidc
                                         .userInfoEndpoint(userInfoEndpoint -> userInfoEndpoint
                                                 .userInfoMapper(context -> new OidcUserInfo(
