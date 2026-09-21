@@ -9,6 +9,8 @@ import com.zaalima.iam.entity.User;
 import com.zaalima.iam.exception.DuplicateEmailException;
 import com.zaalima.iam.exception.DuplicateUsernameException;
 import com.zaalima.iam.exception.UserNotFoundException;
+import com.zaalima.iam.repository.AuthorityRepository;
+import com.zaalima.iam.repository.PasswordResetTokenRepository;
 import com.zaalima.iam.repository.RoleRepository;
 import com.zaalima.iam.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +41,12 @@ class UserServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private AuthorityRepository authorityRepository;
+
+    @Mock
+    private PasswordResetTokenRepository passwordResetTokenRepository;
 
     @InjectMocks
     private UserService userService;

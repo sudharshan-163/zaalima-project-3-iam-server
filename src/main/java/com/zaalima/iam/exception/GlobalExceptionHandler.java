@@ -14,55 +14,51 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DuplicateUsernameException.class)
     public ResponseEntity<Map<String, String>> handleDuplicateUsername(
-            DuplicateUsernameException exception) {
-
-        Map<String, String> response = new HashMap<>();
-        response.put("error", exception.getMessage());
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+            DuplicateUsernameException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", ex.getMessage()));
     }
 
     @ExceptionHandler(DuplicateEmailException.class)
     public ResponseEntity<Map<String, String>> handleDuplicateEmail(
-            DuplicateEmailException exception) {
-
-        Map<String, String> response = new HashMap<>();
-        response.put("error", exception.getMessage());
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+            DuplicateEmailException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", ex.getMessage()));
     }
 
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleUserNotFound(
-            UserNotFoundException exception) {
+            UserNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", ex.getMessage()));
+    }
 
-        Map<String, String> response = new HashMap<>();
-        response.put("error", exception.getMessage());
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    @ExceptionHandler(InvalidPasswordResetTokenException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidPasswordResetToken(
+            InvalidPasswordResetTokenException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", ex.getMessage()));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArgument(
-            IllegalArgumentException exception) {
-
-        Map<String, String> response = new HashMap<>();
-        response.put("error", exception.getMessage());
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            IllegalArgumentException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationErrors(
-            MethodArgumentNotValidException exception) {
+    public ResponseEntity<Map<String, String>> handleValidation(
+            MethodArgumentNotValidException ex) {
 
         Map<String, String> errors = new HashMap<>();
 
-        exception.getBindingResult()
-                .getFieldErrors()
-                .forEach(error ->
-                        errors.put(error.getField(), error.getDefaultMessage()));
+        ex.getBindingResult().getFieldErrors()
+                .forEach(error -> errors.put(
+                        error.getField(),
+                        error.getDefaultMessage()
+                ));
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+        return ResponseEntity.badRequest().body(errors);
     }
 }
