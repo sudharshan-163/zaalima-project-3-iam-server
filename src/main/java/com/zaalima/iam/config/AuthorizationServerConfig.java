@@ -127,6 +127,8 @@ public class AuthorizationServerConfig {
                         AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(
                         AuthorizationGrantType.REFRESH_TOKEN)
+                .authorizationGrantType(
+                        AuthorizationGrantType.CLIENT_CREDENTIALS)
                 .redirectUri(
                         "http://localhost:8085/oauth2/callback")
                 .scope("openid")
@@ -157,10 +159,3 @@ public class AuthorizationServerConfig {
         }
     }
 }
-
-
-
-
-
-
-
