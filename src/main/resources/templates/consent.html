@@ -1,0 +1,144 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authorize Application</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .consent-card {
+            width: 420px;
+            background: white;
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #222;
+        }
+
+        .description {
+            color: #666;
+            margin-bottom: 24px;
+        }
+
+        .scope {
+            padding: 12px;
+            margin: 8px 0;
+            background: #f1f3f5;
+            border-radius: 6px;
+        }
+
+        .scope input {
+            margin-right: 8px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .authorize {
+            background: #2563eb;
+            color: white;
+        }
+
+        .deny {
+            background: #e5e7eb;
+            color: #333;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="consent-card">
+
+    <h1>Authorize Application</h1>
+
+    <p class="description">
+        The application is requesting access to your account.
+    </p>
+
+    <form name="consent_form" method="post" action="/oauth2/authorize">
+
+        <input type="hidden" name="client_id" th:value="${param.client_id}">
+        <input type="hidden" name="state" th:value="${param.state}">
+
+        <div class="scope">
+            <label>
+                <input type="checkbox"
+                       name="scope"
+                       value="openid"
+                       th:checked="${param.scope != null and #lists.contains(param.scope, 'openid')}">
+                <strong>OpenID</strong>
+            </label>
+            <p>Verify your identity.</p>
+        </div>
+
+        <div class="scope">
+            <label>
+                <input type="checkbox"
+                       name="scope"
+                       value="profile"
+                       th:checked="${param.scope != null and #lists.contains(param.scope, 'profile')}">
+                <strong>Profile</strong>
+            </label>
+            <p>Access your basic profile information.</p>
+        </div>
+
+        <div class="actions">
+
+            <button type="button"
+                    class="deny"
+                    onclick="cancelConsent()">
+                Deny
+            </button>
+
+            <button type="submit"
+                    class="authorize">
+                Authorize
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+<script>
+    function cancelConsent() {
+        const form = document.consent_form;
+
+        form.querySelectorAll('input[name="scope"]').forEach(function (checkbox) {
+            checkbox.checked = false;
+        });
+
+        form.submit();
+    }
+</script>
+
+</body>
+</html>
