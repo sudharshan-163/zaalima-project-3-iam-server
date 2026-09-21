@@ -44,6 +44,21 @@ public class MfaService {
     }
 
     @Transactional(readOnly = true)
+    public boolean verifySetupCode(String username, String code) {
+
+        MfaCredential credential =
+                mfaCredentialRepository.findByUserUsername(username)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "MFA is not configured"));
+
+        return codeVerifier.isValidCode(
+                credential.getSecret(),
+                code
+        );
+    }
+
+    @Transactional(readOnly = true)
     public boolean verifyCode(String username, String code) {
 
         MfaCredential credential =

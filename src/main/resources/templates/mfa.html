@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MFA Verification</title>
+</head>
+<body>
+
+<h2>MFA Verification</h2>
+
+<p>Enter the 6-digit code from your authenticator app.</p>
+
+<form method="post" action="/mfa">
+
+    <input type="hidden"
+           th:name="${_csrf.parameterName}"
+           th:value="${_csrf.token}" />
+
+    <label for="code">MFA Code:</label>
+
+    <input
+        type="text"
+        id="code"
+        name="code"
+        pattern="[0-9]{6}"
+        maxlength="6"
+        required
+        autocomplete="one-time-code"
+    />
+
+    <button type="submit">Verify</button>
+
+</form>
+
+</body>
+</html>

@@ -16,11 +16,11 @@ public class MfaController {
     private final MfaService mfaService;
 
     @PostMapping("/setup")
-    public ResponseEntity<String> setup(Authentication authentication) {
+    public ResponseEntity<String> setup(
+            Authentication authentication) {
 
-        String secret = mfaService.generateSecret(
-                authentication.getName()
-        );
+        String secret =
+                mfaService.generateSecret(authentication.getName());
 
         return ResponseEntity.ok(secret);
     }
@@ -30,10 +30,11 @@ public class MfaController {
             @Valid @RequestBody MfaCodeRequest request,
             Authentication authentication) {
 
-        boolean valid = mfaService.verifyCode(
-                authentication.getName(),
-                request.getCode()
-        );
+        boolean valid =
+                mfaService.verifySetupCode(
+                        authentication.getName(),
+                        request.getCode()
+                );
 
         if (!valid) {
             return ResponseEntity.badRequest()
