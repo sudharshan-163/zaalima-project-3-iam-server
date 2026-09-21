@@ -4,25 +4,39 @@ import com.zaalima.iam.dto.UserProfileResponse;
 import com.zaalima.iam.dto.UserProfileUpdateRequest;
 import com.zaalima.iam.dto.UserRegistrationRequest;
 import com.zaalima.iam.dto.UserRegistrationResponse;
+import com.zaalima.iam.dto.ForgotPasswordRequest;
+import com.zaalima.iam.dto.ResetPasswordRequest;
+import com.zaalima.iam.entity.Authority;
+import com.zaalima.iam.entity.PasswordResetToken;
 import com.zaalima.iam.entity.Role;
 import com.zaalima.iam.entity.User;
 import com.zaalima.iam.exception.DuplicateEmailException;
 import com.zaalima.iam.exception.DuplicateUsernameException;
+import com.zaalima.iam.exception.InvalidPasswordResetTokenException;
 import com.zaalima.iam.exception.UserNotFoundException;
+import com.zaalima.iam.repository.AuthorityRepository;
+import com.zaalima.iam.repository.PasswordResetTokenRepository;
 import com.zaalima.iam.repository.RoleRepository;
 import com.zaalima.iam.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
     private static final String DEFAULT_ROLE = "USER";
+    private static final Duration PASSWORD_RESET_TOKEN_VALIDITY = Duration.ofMinutes(30);
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final AuthorityRepository authorityRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
 
     public UserRegistrationResponse registerUser(UserRegistrationRequest request) {
@@ -57,23 +71,16 @@ public class UserService {
 
     public UserProfileResponse getUserProfile(Long userId) {
 
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
+        User user = findUserById(userId);
 
-        return new UserProfileResponse(
-            user.getId(),
-            user.getUsername(),
-            user.getEmail(),
-            user.isEnabled()
-        );
+        return toProfileResponse(user);
     }
 
     public UserProfileResponse updateUserProfile(
             Long userId,
             UserProfileUpdateRequest request) {
 
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
+        User user = findUserById(userId);
 
         if (!user.getUsername().equals(request.getUsername())
                 && userRepository.existsByUsername(request.getUsername())) {
@@ -90,11 +97,143 @@ public class UserService {
 
         User updatedUser = userRepository.save(user);
 
+        return toProfileResponse(updatedUser);
+    }
+
+    public UserProfileResponse findUserByUsername(String username) {
+
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        return toProfileResponse(user);
+    }
+
+    public UserProfileResponse findUserByEmail(String email) {
+
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        return toProfileResponse(user);
+    }
+
+    public UserProfileResponse enableUser(Long userId) {
+
+        User user = findUserById(userId);
+        user.setEnabled(true);
+
+        return toProfileResponse(userRepository.save(user));
+    }
+
+    public UserProfileResponse disableUser(Long userId) {
+
+        User user = findUserById(userId);
+        user.setEnabled(false);
+
+        return toProfileResponse(userRepository.save(user));
+    }
+
+    public void assignRoleToUser(Long userId, Long roleId) {
+
+        User user = findUserById(userId);
+
+        Role role = roleRepository.findById(roleId)
+            .orElseThrow(() -> new IllegalArgumentException("Role not found"));
+
+        user.getRoles().add(role);
+        userRepository.save(user);
+    }
+
+    public void removeRoleFromUser(Long userId, Long roleId) {
+
+        User user = findUserById(userId);
+
+        Role role = roleRepository.findById(roleId)
+            .orElseThrow(() -> new IllegalArgumentException("Role not found"));
+
+        if (!user.getRoles().remove(role)) {
+            throw new IllegalArgumentException("Role is not assigned to user");
+        }
+
+        userRepository.save(user);
+    }
+
+    public void assignAuthorityToRole(Long roleId, Long authorityId) {
+
+        Role role = roleRepository.findById(roleId)
+            .orElseThrow(() -> new IllegalArgumentException("Role not found"));
+
+        Authority authority = authorityRepository.findById(authorityId)
+            .orElseThrow(() -> new IllegalArgumentException("Authority not found"));
+
+        role.getAuthorities().add(authority);
+        roleRepository.save(role);
+    }
+
+    public void removeAuthorityFromRole(Long roleId, Long authorityId) {
+
+        Role role = roleRepository.findById(roleId)
+            .orElseThrow(() -> new IllegalArgumentException("Role not found"));
+
+        Authority authority = authorityRepository.findById(authorityId)
+            .orElseThrow(() -> new IllegalArgumentException("Authority not found"));
+
+        if (!role.getAuthorities().remove(authority)) {
+            throw new IllegalArgumentException("Authority is not assigned to role");
+        }
+
+        roleRepository.save(role);
+    }
+
+    public String createPasswordResetToken(ForgotPasswordRequest request) {
+
+        User user = userRepository.findByEmail(request.getEmail())
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        PasswordResetToken resetToken = new PasswordResetToken();
+        resetToken.setToken(UUID.randomUUID().toString());
+        resetToken.setUser(user);
+        resetToken.setExpiresAt(Instant.now().plus(PASSWORD_RESET_TOKEN_VALIDITY));
+        resetToken.setUsed(false);
+
+        passwordResetTokenRepository.save(resetToken);
+
+        return resetToken.getToken();
+    }
+
+    public void resetPassword(ResetPasswordRequest request) {
+
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(request.getToken())
+            .orElseThrow(() -> new InvalidPasswordResetTokenException("Invalid password reset token"));
+
+        if (resetToken.isUsed()) {
+            throw new InvalidPasswordResetTokenException("Password reset token has already been used");
+        }
+
+        if (resetToken.getExpiresAt().isBefore(Instant.now())) {
+            throw new InvalidPasswordResetTokenException("Password reset token has expired");
+        }
+
+        User user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        userRepository.save(user);
+
+        resetToken.setUsed(true);
+        passwordResetTokenRepository.save(resetToken);
+    }
+
+    private User findUserById(Long userId) {
+
+        return userRepository.findById(userId)
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
+    }
+
+    private UserProfileResponse toProfileResponse(User user) {
+
         return new UserProfileResponse(
-            updatedUser.getId(),
-            updatedUser.getUsername(),
-            updatedUser.getEmail(),
-            updatedUser.isEnabled()
+            user.getId(),
+            user.getUsername(),
+            user.getEmail(),
+            user.isEnabled()
         );
     }
 }
