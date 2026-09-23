@@ -6,6 +6,7 @@ import com.zaalima.iam.exception.DuplicateEmailException;
 import com.zaalima.iam.exception.DuplicateUsernameException;
 import com.zaalima.iam.exception.GlobalExceptionHandler;
 import com.zaalima.iam.exception.UserNotFoundException;
+import com.zaalima.iam.service.TokenRevocationService;
 import com.zaalima.iam.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +37,10 @@ class UserControllerTest {
     @MockBean
     private UserService userService;
 
-    @Test
+
+    @MockBean
+    private com.zaalima.iam.service.TokenRevocationService tokenRevocationService;
+@Test
     void register_shouldReturnCreated() throws Exception {
 
         UserRegistrationResponse response =
