@@ -273,4 +273,20 @@ class UserManagementServiceTest {
 
         verify(userRepository, never()).save(any(User.class));
     }
+
+    @Test
+    void assignRoleToUser_shouldRejectInvalidRole() {
+        User user = new User();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(roleRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> userService.assignRoleToUser(1L, 999L)
+        );
+
+        assertTrue(user.getRoles().isEmpty());
+        verify(userRepository, never()).save(any(User.class));
+    }
 }
