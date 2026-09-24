@@ -7,6 +7,18 @@ import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.server.authorization.token.JwtGenerator;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2AccessTokenGenerator;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2RefreshTokenGenerator;
+import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
+import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
+import org.springframework.security.oauth2.core.OAuth2Token;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
+import com.zaalima.iam.security.AuditingOAuth2TokenGenerator;
+import com.zaalima.iam.service.AuditLogService;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -23,6 +35,7 @@ import org.springframework.security.oauth2.server.authorization.settings.Authori
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import com.zaalima.iam.service.OidcUserInfoService;
+import com.zaalima.iam.security.RedisJwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -32,7 +45,6 @@ import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPublicKey;
 import java.util.UUID;
 
-import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 public class AuthorizationServerConfig {
@@ -41,7 +53,8 @@ public class AuthorizationServerConfig {
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(
             HttpSecurity http,
-            OidcUserInfoService oidcUserInfoService) throws Exception {
+            OidcUserInfoService oidcUserInfoService,
+            RedisJwtAuthenticationConverter redisJwtAuthenticationConverter) throws Exception {
 
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
                 new OAuth2AuthorizationServerConfigurer();
@@ -74,7 +87,9 @@ public class AuthorizationServerConfig {
                                 endpointsMatcher
                         ))
                 .oauth2ResourceServer(resourceServer ->
-                        resourceServer.jwt(withDefaults()));
+                        resourceServer.jwt(jwt ->
+                                jwt.jwtAuthenticationConverter(redisJwtAuthenticationConverter)
+                        ));
 
         return http.build();
     }
@@ -94,6 +109,31 @@ public class AuthorizationServerConfig {
 
         return new ImmutableJWKSet<>(
                 new JWKSet(rsaKey));
+    }
+
+
+    @Bean
+    public OAuth2TokenGenerator<OAuth2Token> tokenGenerator(
+            JWKSource<SecurityContext> jwkSource,
+            OAuth2TokenCustomizer<JwtEncodingContext> jwtTokenCustomizer,
+            AuditLogService auditLogService) {
+
+        JwtGenerator jwtGenerator =
+                new JwtGenerator(new NimbusJwtEncoder(jwkSource));
+
+        jwtGenerator.setJwtCustomizer(jwtTokenCustomizer);
+
+        OAuth2TokenGenerator<OAuth2Token> delegate =
+                new DelegatingOAuth2TokenGenerator(
+                        jwtGenerator,
+                        new OAuth2AccessTokenGenerator(),
+                        new OAuth2RefreshTokenGenerator()
+                );
+
+        return new AuditingOAuth2TokenGenerator(
+                auditLogService,
+                delegate
+        );
     }
 
     @Bean

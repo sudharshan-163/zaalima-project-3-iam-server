@@ -2,6 +2,7 @@ package com.zaalima.iam.controller;
 
 import com.zaalima.iam.service.MfaChallengeAuthenticationService;
 import com.zaalima.iam.service.MfaPendingAuthenticationService;
+import com.zaalima.iam.service.AuditLogService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -23,6 +24,8 @@ public class MfaAuthenticationController {
 
     private final MfaPendingAuthenticationService
             mfaPendingAuthenticationService;
+
+    private final AuditLogService auditLogService;
 
     @GetMapping("/mfa")
     public String showMfaPage() {
@@ -53,6 +56,12 @@ public class MfaAuthenticationController {
                         .verifyChallenge(username, code);
 
         if (!valid) {
+            auditLogService.logFailure(
+                    username,
+                    "LOGIN_FAILED_MFA",
+                    "User authentication failed because MFA verification was invalid or expired"
+            );
+
             redirectAttributes.addFlashAttribute(
                     "error",
                     "Invalid or expired MFA code."
@@ -75,6 +84,12 @@ public class MfaAuthenticationController {
                 );
 
         mfaPendingAuthenticationService.remove(username);
+
+        auditLogService.logSuccess(
+                username,
+                "LOGIN_SUCCESS",
+                "User authentication completed successfully after MFA verification"
+        );
 
         return "redirect:/";
     }

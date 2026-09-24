@@ -1,6 +1,7 @@
 package com.zaalima.iam.repository;
 
 import com.zaalima.iam.entity.AuditLog;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -17,6 +18,11 @@ class AuditLogRepositoryTest {
 
     @Autowired
     private AuditLogRepository auditLogRepository;
+
+    @BeforeEach
+    void cleanAuditLogs() {
+        auditLogRepository.deleteAll();
+    }
 
     @Test
     void shouldSaveAndRetrieveAuditLogsByUsername() {
