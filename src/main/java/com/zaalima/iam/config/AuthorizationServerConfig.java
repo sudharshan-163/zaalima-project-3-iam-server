@@ -7,6 +7,18 @@ import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.server.authorization.token.JwtGenerator;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2AccessTokenGenerator;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2RefreshTokenGenerator;
+import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
+import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
+import org.springframework.security.oauth2.core.OAuth2Token;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
+import com.zaalima.iam.security.AuditingOAuth2TokenGenerator;
+import com.zaalima.iam.service.AuditLogService;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -97,6 +109,31 @@ public class AuthorizationServerConfig {
 
         return new ImmutableJWKSet<>(
                 new JWKSet(rsaKey));
+    }
+
+
+    @Bean
+    public OAuth2TokenGenerator<OAuth2Token> tokenGenerator(
+            JWKSource<SecurityContext> jwkSource,
+            OAuth2TokenCustomizer<JwtEncodingContext> jwtTokenCustomizer,
+            AuditLogService auditLogService) {
+
+        JwtGenerator jwtGenerator =
+                new JwtGenerator(new NimbusJwtEncoder(jwkSource));
+
+        jwtGenerator.setJwtCustomizer(jwtTokenCustomizer);
+
+        OAuth2TokenGenerator<OAuth2Token> delegate =
+                new DelegatingOAuth2TokenGenerator(
+                        jwtGenerator,
+                        new OAuth2AccessTokenGenerator(),
+                        new OAuth2RefreshTokenGenerator()
+                );
+
+        return new AuditingOAuth2TokenGenerator(
+                auditLogService,
+                delegate
+        );
     }
 
     @Bean
