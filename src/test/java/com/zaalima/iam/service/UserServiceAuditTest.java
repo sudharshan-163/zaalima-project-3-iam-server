@@ -2,6 +2,7 @@ package com.zaalima.iam.service;
 
 import com.zaalima.iam.dto.ForgotPasswordRequest;
 import com.zaalima.iam.dto.ResetPasswordRequest;
+import com.zaalima.iam.dto.UserProfileUpdateRequest;
 import com.zaalima.iam.dto.UserRegistrationRequest;
 import com.zaalima.iam.entity.PasswordResetToken;
 import com.zaalima.iam.entity.Role;
@@ -430,4 +431,83 @@ class UserServiceAuditTest {
             eq("AUTHORITY_REMOVED"),
             eq("Authority 'USER_DELETE' removed from role 'ADMIN'")
         );
-    }}
+    }
+    @Test
+    void updateUserProfile_shouldCreateSuccessAudit() {
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("olduser");
+        user.setEmail("old@example.com");
+
+        UserProfileUpdateRequest request = new UserProfileUpdateRequest();
+        request.setUsername("newuser");
+        request.setEmail("new@example.com");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.existsByUsername("newuser")).thenReturn(false);
+        when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        userService.updateUserProfile(1L, request);
+
+        verify(auditLogService).logSuccess(
+            eq("newuser"),
+            eq("USER_PROFILE_UPDATED"),
+            eq("User profile updated successfully")
+        );
+    }
+
+    @Test
+    void updateUserProfile_shouldCreateFailureAudit_whenDuplicateUsername() {
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("currentuser");
+        user.setEmail("user@example.com");
+
+        UserProfileUpdateRequest request = new UserProfileUpdateRequest();
+        request.setUsername("existinguser");
+        request.setEmail("user@example.com");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.existsByUsername("existinguser")).thenReturn(true);
+
+        assertThrows(
+            DuplicateUsernameException.class,
+            () -> userService.updateUserProfile(1L, request)
+        );
+
+        verify(auditLogService).logFailure(
+            eq("currentuser"),
+            eq("PROFILE_UPDATE_FAILED_DUPLICATE_USERNAME"),
+            eq("Profile update failed because the username already exists")
+        );
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void updateUserProfile_shouldCreateFailureAudit_whenDuplicateEmail() {
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("currentuser");
+        user.setEmail("user@example.com");
+
+        UserProfileUpdateRequest request = new UserProfileUpdateRequest();
+        request.setUsername("currentuser");
+        request.setEmail("existing@example.com");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.existsByEmail("existing@example.com")).thenReturn(true);
+
+        assertThrows(
+            DuplicateEmailException.class,
+            () -> userService.updateUserProfile(1L, request)
+        );
+
+        verify(auditLogService).logFailure(
+            eq("currentuser"),
+            eq("PROFILE_UPDATE_FAILED_DUPLICATE_EMAIL"),
+            eq("Profile update failed because the email already exists")
+        );
+        verify(userRepository, never()).save(any(User.class));
+    }
+}

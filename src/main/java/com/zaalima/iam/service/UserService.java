@@ -36,6 +36,9 @@ public class UserService {
     private static final String USER_REGISTERED = "USER_REGISTERED";
     private static final String REGISTRATION_FAILED_DUPLICATE_USERNAME = "REGISTRATION_FAILED_DUPLICATE_USERNAME";
     private static final String REGISTRATION_FAILED_DUPLICATE_EMAIL = "REGISTRATION_FAILED_DUPLICATE_EMAIL";
+    private static final String USER_PROFILE_UPDATED = "USER_PROFILE_UPDATED";
+    private static final String PROFILE_UPDATE_FAILED_DUPLICATE_USERNAME = "PROFILE_UPDATE_FAILED_DUPLICATE_USERNAME";
+    private static final String PROFILE_UPDATE_FAILED_DUPLICATE_EMAIL = "PROFILE_UPDATE_FAILED_DUPLICATE_EMAIL";
     private static final String PASSWORD_RESET_REQUESTED = "PASSWORD_RESET_REQUESTED";
     private static final String PASSWORD_RESET_SUCCESS = "PASSWORD_RESET_SUCCESS";
     private static final String PASSWORD_RESET_INVALID_TOKEN = "PASSWORD_RESET_INVALID_TOKEN";
@@ -116,11 +119,21 @@ public class UserService {
 
         if (!user.getUsername().equals(request.getUsername())
                 && userRepository.existsByUsername(request.getUsername())) {
+            auditLogService.logFailure(
+                user.getUsername(),
+                PROFILE_UPDATE_FAILED_DUPLICATE_USERNAME,
+                "Profile update failed because the username already exists"
+            );
             throw new DuplicateUsernameException("Username already exists");
         }
 
         if (!user.getEmail().equals(request.getEmail())
                 && userRepository.existsByEmail(request.getEmail())) {
+            auditLogService.logFailure(
+                user.getUsername(),
+                PROFILE_UPDATE_FAILED_DUPLICATE_EMAIL,
+                "Profile update failed because the email already exists"
+            );
             throw new DuplicateEmailException("Email already exists");
         }
 
@@ -128,6 +141,12 @@ public class UserService {
         user.setEmail(request.getEmail());
 
         User updatedUser = userRepository.save(user);
+
+        auditLogService.logSuccess(
+            updatedUser.getUsername(),
+            USER_PROFILE_UPDATED,
+            "User profile updated successfully"
+        );
 
         return toProfileResponse(updatedUser);
     }
