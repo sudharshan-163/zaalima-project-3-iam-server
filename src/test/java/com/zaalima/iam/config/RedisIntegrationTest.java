@@ -2,6 +2,7 @@ package com.zaalima.iam.config;
 
 import com.zaalima.iam.security.RedisJwtAuthenticationConverter;
 import com.zaalima.iam.service.TokenRevocationService;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,6 +16,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@Disabled("Requires a running local Redis instance on port 6379")
 @SpringBootTest
 class RedisIntegrationTest {
 
@@ -71,4 +73,3 @@ class RedisIntegrationTest {
         }
     }
 }
-
