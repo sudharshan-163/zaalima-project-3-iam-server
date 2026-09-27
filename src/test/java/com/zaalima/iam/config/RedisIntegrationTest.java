@@ -2,9 +2,12 @@ package com.zaalima.iam.config;
 
 import com.zaalima.iam.security.RedisJwtAuthenticationConverter;
 import com.zaalima.iam.service.TokenRevocationService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException;
@@ -14,6 +17,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @SpringBootTest
 class RedisIntegrationTest {
@@ -27,9 +31,31 @@ class RedisIntegrationTest {
     @Autowired
     private RedisJwtAuthenticationConverter jwtAuthenticationConverter;
 
+    @BeforeEach
+    void verifyRedisServiceAvailable() {
+        boolean redisPingSuccessful = false;
+        try {
+            RedisConnectionFactory connectionFactory = redisTemplate.getConnectionFactory();
+            if (connectionFactory != null) {
+                try (RedisConnection connection = connectionFactory.getConnection()) {
+                    String pingResponse = connection.ping();
+                    redisPingSuccessful = "PONG".equalsIgnoreCase(pingResponse);
+                }
+            }
+        } catch (Exception ignored) {
+            redisPingSuccessful = false;
+        }
+
+        assumeTrue(
+                redisPingSuccessful,
+                "Redis server is unreachable or failed PING/PONG on the configured host/port. " +
+                "Integration test requires a live Redis instance (e.g. in CI or WSL)."
+        );
+    }
+
     @Test
     void shouldWriteAndReadFromRedis() {
-        String key = "iam:test:redis";
+        String key = "iam:test:redis:" + UUID.randomUUID();
         String value = "redis-connected";
 
         try {
@@ -71,4 +97,3 @@ class RedisIntegrationTest {
         }
     }
 }
-
