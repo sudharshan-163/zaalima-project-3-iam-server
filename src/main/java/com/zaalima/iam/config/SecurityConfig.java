@@ -1,6 +1,7 @@
 package com.zaalima.iam.config;
 
 import com.zaalima.iam.security.MfaAuthenticationSuccessHandler;
+import com.zaalima.iam.security.RedisJwtAuthenticationConverter;
 import com.zaalima.iam.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -12,22 +13,24 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final MfaAuthenticationSuccessHandler
-            mfaAuthenticationSuccessHandler;
+    private final MfaAuthenticationSuccessHandler mfaAuthenticationSuccessHandler;
+    private final RedisJwtAuthenticationConverter redisJwtAuthenticationConverter;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers(
-                                "/api/users/register"
+                                "/api/users/register",
+                                "/api/tokens/**"
                         )
                 )
                 .authorizeHttpRequests(auth -> auth
@@ -37,11 +40,27 @@ public class SecurityConfig {
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
-                .formLogin(form -> form
-                        .successHandler(
-                                mfaAuthenticationSuccessHandler
+                .oauth2ResourceServer(resourceServer ->
+                        resourceServer.jwt(jwt ->
+                                jwt.jwtAuthenticationConverter(redisJwtAuthenticationConverter)
                         )
+                )
+                .formLogin(form -> form
+                        .successHandler(mfaAuthenticationSuccessHandler)
                         .permitAll()
+                )
+                .exceptionHandling(exceptions -> exceptions
+                        .defaultAuthenticationEntryPointFor(
+                                new LoginUrlAuthenticationEntryPoint("/login"),
+                                new AntPathRequestMatcher("/oauth2/consent")
+                        )
+                        .defaultAuthenticationEntryPointFor(
+                                new LoginUrlAuthenticationEntryPoint("/login"),
+                                request -> {
+                                    String authHeader = request.getHeader("Authorization");
+                                    return authHeader == null || !authHeader.startsWith("Bearer ");
+                                }
+                        )
                 );
 
         return http.build();
@@ -57,19 +76,15 @@ public class SecurityConfig {
             CustomUserDetailsService userDetailsService,
             PasswordEncoder passwordEncoder) {
 
-        DaoAuthenticationProvider provider =
-                new DaoAuthenticationProvider();
-
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
-
         return provider;
     }
 
     @Bean
     public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration configuration)
-            throws Exception {
+            AuthenticationConfiguration configuration) throws Exception {
 
         return configuration.getAuthenticationManager();
     }
