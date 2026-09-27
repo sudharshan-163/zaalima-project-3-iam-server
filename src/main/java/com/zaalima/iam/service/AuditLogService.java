@@ -21,12 +21,12 @@ public class AuditLogService {
             String ipAddress) {
 
         AuditLog auditLog = new AuditLog();
-        auditLog.setUsername(username);
-        auditLog.setEventType(eventType);
-        auditLog.setDescription(description);
+        auditLog.setUsername(truncate(username, 255));
+        auditLog.setEventType(truncate(eventType, 100));
+        auditLog.setDescription(truncate(description, 255));
         auditLog.setTimestamp(Instant.now());
         auditLog.setSuccess(success);
-        auditLog.setIpAddress(ipAddress);
+        auditLog.setIpAddress(truncate(ipAddress, 45));
 
         return auditLogRepository.save(auditLog);
     }
@@ -45,5 +45,12 @@ public class AuditLogService {
             String description) {
 
         return logEvent(username, eventType, description, false, null);
+    }
+
+    private String truncate(String value, int maxLength) {
+        if (value == null) {
+            return null;
+        }
+        return value.length() > maxLength ? value.substring(0, maxLength) : value;
     }
 }

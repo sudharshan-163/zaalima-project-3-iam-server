@@ -45,7 +45,6 @@ import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPublicKey;
 import java.util.UUID;
 
-
 @Configuration
 public class AuthorizationServerConfig {
 
@@ -72,11 +71,16 @@ public class AuthorizationServerConfig {
                                 )
                                 .oidc(oidc -> oidc
                                         .userInfoEndpoint(userInfoEndpoint -> userInfoEndpoint
-                                                .userInfoMapper(context -> new OidcUserInfo(
-                                                        oidcUserInfoService.getUserInfo(
-                                                                context.getAuthorization().getPrincipalName()
-                                                        )
-                                                ))
+                                                .userInfoMapper(context -> {
+                                                    String principalName = context.getAuthorization() != null
+                                                            ? context.getAuthorization().getPrincipalName()
+                                                            : (context.getAuthentication() != null
+                                                            ? context.getAuthentication().getName()
+                                                            : "unknown");
+                                                    return new OidcUserInfo(
+                                                            oidcUserInfoService.getUserInfo(principalName)
+                                                    );
+                                                })
                                         ))
                 )
                 .authorizeHttpRequests(authorize ->
@@ -110,7 +114,6 @@ public class AuthorizationServerConfig {
         return new ImmutableJWKSet<>(
                 new JWKSet(rsaKey));
     }
-
 
     @Bean
     public OAuth2TokenGenerator<OAuth2Token> tokenGenerator(
