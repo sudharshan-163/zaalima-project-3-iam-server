@@ -2,7 +2,7 @@ package com.zaalima.iam.config;
 
 import com.zaalima.iam.security.RedisJwtAuthenticationConverter;
 import com.zaalima.iam.service.TokenRevocationService;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -10,13 +10,15 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException;
 
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.time.Instant;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-@Disabled("Requires a running local Redis instance on port 6379")
 @SpringBootTest
 class RedisIntegrationTest {
 
@@ -28,6 +30,17 @@ class RedisIntegrationTest {
 
     @Autowired
     private RedisJwtAuthenticationConverter jwtAuthenticationConverter;
+
+    @BeforeEach
+    void verifyRedisAvailability() {
+        boolean redisAvailable = false;
+        try (Socket socket = new Socket()) {
+            socket.connect(new InetSocketAddress("127.0.0.1", 6379), 200);
+            redisAvailable = true;
+        } catch (Exception ignored) {
+        }
+        assumeTrue(redisAvailable, "Local Redis daemon is not reachable on 127.0.0.1:6379 - skipping integration test");
+    }
 
     @Test
     void shouldWriteAndReadFromRedis() {
