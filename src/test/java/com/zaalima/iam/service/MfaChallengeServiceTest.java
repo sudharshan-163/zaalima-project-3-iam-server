@@ -38,4 +38,13 @@ class MfaChallengeServiceTest {
                 service.hasValidChallenge("testuser")
         );
     }
+    @Test
+    void expiredChallengeShouldBeDetected() {
+        MfaChallenge challenge = new MfaChallenge(
+                "testuser",
+                java.time.Instant.now().minusSeconds(301)
+        );
+
+        assertTrue(challenge.isExpired(300));
+    }
 }
