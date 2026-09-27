@@ -68,4 +68,19 @@ class MfaChallengeAuthenticationServiceTest {
         verify(mfaChallengeService)
                 .removeChallenge("testuser");
     }
+    @Test
+    void successfulChallengeShouldNotBeReusable() {
+        MfaChallengeService realChallengeService = new MfaChallengeService();
+        MfaService mockMfaService = mock(MfaService.class);
+        MfaChallengeAuthenticationService realService =
+                new MfaChallengeAuthenticationService(realChallengeService, mockMfaService);
+
+        realChallengeService.createChallenge("testuser");
+        when(mockMfaService.verifyCode("testuser", "123456")).thenReturn(true);
+
+        assertTrue(realService.verifyChallenge("testuser", "123456"));
+        assertFalse(realService.verifyChallenge("testuser", "123456"));
+
+        verify(mockMfaService, times(1)).verifyCode("testuser", "123456");
+    }
 }
