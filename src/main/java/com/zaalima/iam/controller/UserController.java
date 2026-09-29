@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -35,6 +36,18 @@ public class UserController {
         UserRegistrationResponse response = userService.registerUser(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserProfileResponse> getCurrentUserProfile(Authentication authentication) {
+        return ResponseEntity.ok(userService.getCurrentUserProfile(authentication.getName()));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<UserProfileResponse> updateCurrentUserProfile(
+            Authentication authentication,
+            @Valid @RequestBody UserProfileUpdateRequest request) {
+        return ResponseEntity.ok(userService.updateCurrentUserProfile(authentication.getName(), request));
     }
 
     @GetMapping("/{id}")
@@ -85,7 +98,8 @@ public class UserController {
             @PathVariable Long userId,
             @PathVariable Long roleId) {
 
-        userService.assignRoleToUser(userId, roleId); return ResponseEntity.ok().build();
+        userService.assignRoleToUser(userId, roleId);
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{userId}/roles/{roleId}")
@@ -93,7 +107,8 @@ public class UserController {
             @PathVariable Long userId,
             @PathVariable Long roleId) {
 
-        userService.removeRoleFromUser(userId, roleId); return ResponseEntity.ok().build();
+        userService.removeRoleFromUser(userId, roleId);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/password/forgot")
