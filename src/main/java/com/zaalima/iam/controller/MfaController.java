@@ -46,9 +46,22 @@ public class MfaController {
 
     @PostMapping("/enable")
     public ResponseEntity<String> enable(
+            @Valid @RequestBody MfaCodeRequest request,
             Authentication authentication) {
 
-        mfaService.enableMfa(authentication.getName());
+        String username = authentication.getName();
+
+        boolean valid = mfaService.verifySetupCode(
+                username,
+                request.getCode()
+        );
+
+        if (!valid) {
+            return ResponseEntity.badRequest()
+                    .body("Invalid MFA code");
+        }
+
+        mfaService.enableMfa(username);
 
         return ResponseEntity.ok("MFA enabled");
     }
