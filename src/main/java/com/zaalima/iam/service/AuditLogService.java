@@ -3,6 +3,8 @@ package com.zaalima.iam.service;
 import com.zaalima.iam.entity.AuditLog;
 import com.zaalima.iam.repository.AuditLogRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -45,6 +47,21 @@ public class AuditLogService {
             String description) {
 
         return logEvent(username, eventType, description, false, null);
+    }
+
+    public Page<AuditLog> getAuditLogs(
+            String username,
+            String eventType,
+            Pageable pageable) {
+
+        return auditLogRepository.findFiltered(
+                normalizeFilter(username),
+                normalizeFilter(eventType),
+                pageable);
+    }
+
+    private String normalizeFilter(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private String truncate(String value, int maxLength) {
