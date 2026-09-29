@@ -104,6 +104,50 @@ public class UserService {
         );
     }
 
+    public UserProfileResponse getCurrentUserProfile(String currentUsername) {
+        User user = userRepository.findByUsername(currentUsername)
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
+        return toProfileResponse(user);
+    }
+
+    public UserProfileResponse updateCurrentUserProfile(String currentUsername, UserProfileUpdateRequest request) {
+        User user = userRepository.findByUsername(currentUsername)
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        if (!user.getUsername().equals(request.getUsername())
+                && userRepository.existsByUsername(request.getUsername())) {
+            auditLogService.logFailure(
+                user.getUsername(),
+                PROFILE_UPDATE_FAILED_DUPLICATE_USERNAME,
+                "Profile update failed because the username already exists"
+            );
+            throw new DuplicateUsernameException("Username already exists");
+        }
+
+        if (!user.getEmail().equals(request.getEmail())
+                && userRepository.existsByEmail(request.getEmail())) {
+            auditLogService.logFailure(
+                user.getUsername(),
+                PROFILE_UPDATE_FAILED_DUPLICATE_EMAIL,
+                "Profile update failed because the email already exists"
+            );
+            throw new DuplicateEmailException("Email already exists");
+        }
+
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+
+        User updatedUser = userRepository.save(user);
+
+        auditLogService.logSuccess(
+            updatedUser.getUsername(),
+            USER_PROFILE_UPDATED,
+            "User profile updated successfully"
+        );
+
+        return toProfileResponse(updatedUser);
+    }
+
     public UserProfileResponse getUserProfile(Long userId) {
 
         User user = findUserById(userId);
