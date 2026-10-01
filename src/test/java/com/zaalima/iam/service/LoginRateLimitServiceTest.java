@@ -43,16 +43,19 @@ class LoginRateLimitServiceTest {
     }
 
     @Test
-    void shouldMaintainSeparateLimitForDifferentUsername() {
+    void shouldEnforceIpLimitAcrossDifferentUsernames() {
         for (int attempt = 1; attempt <= 5; attempt++) {
             assertTrue(loginRateLimitService.isAllowed(IP, USERNAME));
         }
 
-        assertFalse(loginRateLimitService.isAllowed(IP, USERNAME));
+        assertFalse(
+                loginRateLimitService.isAllowed(IP, "another_user"),
+                "Different username from the same IP should still be blocked"
+        );
 
         assertTrue(
-                loginRateLimitService.isAllowed(IP, "another_user"),
-                "Different username should have a separate rate-limit key"
+                loginRateLimitService.isAllowed("192.0.2.11", USERNAME),
+                "Same username from a different IP should have a separate IP rate-limit"
         );
     }
 
@@ -82,5 +85,18 @@ class LoginRateLimitServiceTest {
                 .anyMatch(key -> key.startsWith(expectedKeyPattern));
 
         assertTrue(keyExists, "Rate-limit key should exist in Redis");
+    }
+    @Test
+    void shouldBlockIpAfterFiveAttemptsAcrossDifferentUsernames() {
+        assertTrue(loginRateLimitService.isAllowed(IP, "user1"));
+        assertTrue(loginRateLimitService.isAllowed(IP, "user2"));
+        assertTrue(loginRateLimitService.isAllowed(IP, "user3"));
+        assertTrue(loginRateLimitService.isAllowed(IP, "user4"));
+        assertTrue(loginRateLimitService.isAllowed(IP, "user5"));
+
+        assertFalse(
+                loginRateLimitService.isAllowed(IP, "user6"),
+                "Sixth attempt from the same IP should be blocked"
+        );
     }
 }
