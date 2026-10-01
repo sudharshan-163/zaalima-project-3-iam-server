@@ -1,10 +1,13 @@
 package com.zaalima.iam.config;
 
+import com.zaalima.iam.security.LoginRateLimitFilter;
 import com.zaalima.iam.security.MfaAuthenticationSuccessHandler;
 import com.zaalima.iam.security.RedisJwtAuthenticationConverter;
 import com.zaalima.iam.service.CustomUserDetailsService;
+import com.zaalima.iam.service.LoginRateLimitService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -24,6 +27,12 @@ public class SecurityConfig {
 
     private final MfaAuthenticationSuccessHandler mfaAuthenticationSuccessHandler;
     private final RedisJwtAuthenticationConverter redisJwtAuthenticationConverter;
+
+    @Bean
+    @ConditionalOnBean(LoginRateLimitService.class)
+    public LoginRateLimitFilter loginRateLimitFilter(LoginRateLimitService loginRateLimitService) {
+        return new LoginRateLimitFilter(loginRateLimitService);
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -91,3 +100,6 @@ public class SecurityConfig {
         return configuration.getAuthenticationManager();
     }
 }
+
+
+
