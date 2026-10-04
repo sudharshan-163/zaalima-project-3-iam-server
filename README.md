@@ -39,3 +39,16 @@ mvnw.cmd spring-boot:run
 The application uses port `8080` initially.
 
 PostgreSQL configuration will be added in the next implementation step.
+
+## Docker Deployment & Validation
+
+The application stack includes the **IAM Server**, **PostgreSQL**, and **Redis** orchestrated via Docker Compose.
+
+### Prerequisites
+- Docker Engine & Docker Compose installed.
+
+### Environment Configuration
+Copy the example environment configuration file:
+```bash
+cp .env.example .env
+
