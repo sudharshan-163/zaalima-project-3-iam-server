@@ -3,9 +3,9 @@
     name: iam-server
 
   datasource:
-    url: jdbc:postgresql://127.0.0.1:5432/zaalima_iam
-    username: postgres
-    password: ${DB_PASSWORD}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://127.0.0.1:5432/zaalima_iam}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${DB_PASSWORD:}
 
   jpa:
     hibernate:
@@ -15,6 +15,7 @@
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:127.0.0.1}
-      port: 6379
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+
 server:
-  port: 8085
+  port: ${SERVER_PORT:8085}
