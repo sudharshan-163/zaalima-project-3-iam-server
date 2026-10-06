@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -8,7 +8,7 @@
     <style>
         body {
             margin: 0;
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background: #f4f6f8;
             display: flex;
             justify-content: center;
@@ -17,38 +17,64 @@
         }
 
         .consent-card {
-            width: 420px;
-            background: white;
+            width: 440px;
+            background: #ffffff;
             padding: 32px;
             border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
         }
 
         h1 {
             margin-top: 0;
-            color: #222;
+            color: #111827;
+            font-size: 1.5rem;
         }
 
         .description {
-            color: #666;
-            margin-bottom: 24px;
+            color: #4b5563;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .client-name {
+            font-weight: 600;
+            color: #1d4ed8;
         }
 
         .scope {
-            padding: 12px;
-            margin: 8px 0;
-            background: #f1f3f5;
-            border-radius: 6px;
+            padding: 12px 14px;
+            margin: 10px 0;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .scope label {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: #1e293b;
+            cursor: pointer;
         }
 
         .scope input {
-            margin-right: 8px;
+            margin-right: 10px;
+            width: 16px;
+            height: 16px;
+            accent-color: #2563eb;
+        }
+
+        .scope p {
+            margin: 6px 0 0 26px;
+            font-size: 0.85rem;
+            color: #64748b;
         }
 
         .actions {
             display: flex;
             gap: 12px;
-            margin-top: 24px;
+            margin-top: 28px;
         }
 
         button {
@@ -57,7 +83,9 @@
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: background-color 0.2s ease;
         }
 
         .authorize {
@@ -65,9 +93,17 @@
             color: white;
         }
 
+        .authorize:hover {
+            background: #1d4ed8;
+        }
+
         .deny {
             background: #e5e7eb;
-            color: #333;
+            color: #374151;
+        }
+
+        .deny:hover {
+            background: #d1d5db;
         }
     </style>
 </head>
@@ -79,35 +115,52 @@
     <h1>Authorize Application</h1>
 
     <p class="description">
-        The application is requesting access to your account.
+        The application <span class="client-name" th:text="${clientId ?: 'OAuth2 Client'}">OAuth2 Client</span> is requesting permission to access your account:
     </p>
 
-    <form name="consent_form" method="post" action="/oauth2/authorize">
+    <form name="consent_form" method="post" th:action="@{/oauth2/authorize}">
 
-        <input type="hidden" name="client_id" th:value="${param.client_id}">
-        <input type="hidden" name="state" th:value="${param.state}">
+        <input type="hidden" name="client_id" th:value="${clientId ?: param.client_id}">
+        <input type="hidden" name="state" th:value="${state ?: param.state}">
 
-        <div class="scope">
-            <label>
-                <input type="checkbox"
-                       name="scope"
-                       value="openid"
-                       th:checked="${param.scope != null and #lists.contains(param.scope, 'openid')}">
-                <strong>OpenID</strong>
-            </label>
-            <p>Verify your identity.</p>
-        </div>
+        <!-- Dynamic Scopes Rendering when scopesWithDescriptions is populated -->
+        <th:block th:if="${scopesWithDescriptions != null and !scopesWithDescriptions.isEmpty()}">
+            <div class="scope" th:each="entry : ${scopesWithDescriptions}">
+                <label>
+                    <input type="checkbox"
+                           name="scope"
+                           th:value="${entry.key}"
+                           checked>
+                    <span th:text="${#strings.capitalize(entry.key)}">Scope Name</span>
+                </label>
+                <p th:text="${entry.value}">Scope description</p>
+            </div>
+        </th:block>
 
-        <div class="scope">
-            <label>
-                <input type="checkbox"
-                       name="scope"
-                       value="profile"
-                       th:checked="${param.scope != null and #lists.contains(param.scope, 'profile')}">
-                <strong>Profile</strong>
-            </label>
-            <p>Access your basic profile information.</p>
-        </div>
+        <!-- Static Fallback for standard scopes (OpenID and Profile) -->
+        <th:block th:if="${scopesWithDescriptions == null or scopesWithDescriptions.isEmpty()}">
+            <div class="scope">
+                <label>
+                    <input type="checkbox"
+                           name="scope"
+                           value="openid"
+                           checked>
+                    <span>OpenID</span>
+                </label>
+                <p>Verify your identity.</p>
+            </div>
+
+            <div class="scope">
+                <label>
+                    <input type="checkbox"
+                           name="scope"
+                           value="profile"
+                           checked>
+                    <span>Profile</span>
+                </label>
+                <p>Access your basic profile information.</p>
+            </div>
+        </th:block>
 
         <div class="actions">
 
@@ -131,11 +184,9 @@
 <script>
     function cancelConsent() {
         const form = document.consent_form;
-
         form.querySelectorAll('input[name="scope"]').forEach(function (checkbox) {
             checkbox.checked = false;
         });
-
         form.submit();
     }
 </script>
