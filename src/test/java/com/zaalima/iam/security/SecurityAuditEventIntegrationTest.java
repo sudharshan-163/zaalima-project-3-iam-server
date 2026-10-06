@@ -4,12 +4,14 @@ import com.zaalima.iam.dto.ForgotPasswordRequest;
 import com.zaalima.iam.dto.ResetPasswordRequest;
 import com.zaalima.iam.dto.UserRegistrationRequest;
 import com.zaalima.iam.entity.AuditLog;
+import com.zaalima.iam.entity.Role;
 import com.zaalima.iam.entity.User;
 import com.zaalima.iam.exception.DuplicateEmailException;
 import com.zaalima.iam.exception.DuplicateUsernameException;
 import com.zaalima.iam.exception.InvalidPasswordResetTokenException;
 import com.zaalima.iam.repository.AuditLogRepository;
 import com.zaalima.iam.repository.PasswordResetTokenRepository;
+import com.zaalima.iam.repository.RoleRepository;
 import com.zaalima.iam.repository.UserRepository;
 import com.zaalima.iam.service.AuditLogService;
 import com.zaalima.iam.service.MfaChallengeAuthenticationService;
@@ -68,6 +70,9 @@ class SecurityAuditEventIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
     private PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Autowired
@@ -81,9 +86,18 @@ class SecurityAuditEventIntegrationTest {
 
     private final List<String> createdUsernames = new ArrayList<>();
 
-    @BeforeEach
+        @BeforeEach
     void setUp() {
         cleanUpData();
+        ensureDefaultRoleExists();
+    }
+
+    private void ensureDefaultRoleExists() {
+        if (roleRepository.findByName("USER").isEmpty()) {
+            Role role = new Role();
+            role.setName("USER");
+            roleRepository.save(role);
+        }
     }
 
     @AfterEach
