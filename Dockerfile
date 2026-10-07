@@ -1,25 +1,28 @@
-﻿# Multi-stage build for Zaalima IAM Server
-FROM eclipse-temurin:17-jdk-jammy AS builder
-WORKDIR /app
+# Stage 1: Build JAR using Maven with Eclipse Temurin JDK 21
+FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder
+WORKDIR /workspace
+
+# Cache dependencies first
 COPY pom.xml .
-COPY .mvn .mvn
-COPY mvnw mvnw
-COPY mvnw.cmd mvnw.cmd
-COPY src src
+RUN mvn dependency:go-offline -B
 
-RUN chmod +x ./mvnw && ./mvnw clean package -DskipTests
+# Copy source and build
+COPY src ./src
+RUN mvn clean package -DskipTests -B
 
-FROM eclipse-temurin:17-jre-jammy
+# Stage 2: Minimal Production JRE Runtime
+FROM eclipse-temurin:21-jre-alpine AS runner
 WORKDIR /app
 
-# Non-root user for security hardening
-RUN groupadd -r iamgroup && useradd -r -g iamgroup iamuser
+# Run as non-root user for security
+RUN addgroup -S zaalima && adduser -S zaalima -G zaalima
+USER zaalima:zaalima
 
-COPY --from=builder /app/target/*.jar app.jar
-RUN chown -R iamuser:iamgroup /app
-
-USER iamuser
+COPY --from=builder /workspace/target/*.jar app.jar
 
 EXPOSE 8085
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Optimized container JVM memory settings
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError"
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
