@@ -1,30 +1,28 @@
-﻿services:
-  iam-postgres:
+services:
+  zaalima-postgres:
     image: postgres:16-alpine
-    container_name: iam-postgres
+    container_name: zaalima-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-zaalima_iam}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: iam_db
+      POSTGRES_USER: iam_user
+      POSTGRES_PASSWORD: iam_password
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-zaalima_iam}"]
+      test: ["CMD-SHELL", "pg_isready -U iam_user -d iam_db"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - iam-network
 
-  iam-redis:
+  zaalima-redis:
     image: redis:7-alpine
-    container_name: iam-redis
+    container_name: zaalima-redis
     restart: unless-stopped
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -32,36 +30,28 @@
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - iam-network
 
-  iam-server:
+  zaalima-iam-server:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: iam-server
+    container_name: zaalima-iam-server
     restart: unless-stopped
-    depends_on:
-      iam-postgres:
-        condition: service_healthy
-      iam-redis:
-        condition: service_healthy
     ports:
-      - "${SERVER_PORT:-8085}:8085"
+      - "8085:8085"
     environment:
-      SERVER_PORT: 8085
-      SPRING_DATASOURCE_URL: jdbc:postgresql://iam-postgres:5432/${POSTGRES_DB:-zaalima_iam}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      SPRING_DATA_REDIS_HOST: iam-redis
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://zaalima-postgres:5432/iam_db
+      SPRING_DATASOURCE_USERNAME: iam_user
+      SPRING_DATASOURCE_PASSWORD: iam_password
+      SPRING_DATA_REDIS_HOST: zaalima-redis
       SPRING_DATA_REDIS_PORT: 6379
-    networks:
-      - iam-network
+    depends_on:
+      zaalima-postgres:
+        condition: service_healthy
+      zaalima-redis:
+        condition: service_healthy
 
 volumes:
   postgres_data:
   redis_data:
-
-networks:
-  iam-network:
-    driver: bridge
