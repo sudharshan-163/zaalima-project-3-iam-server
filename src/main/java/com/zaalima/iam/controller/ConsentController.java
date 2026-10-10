@@ -7,10 +7,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.security.Principal;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Controller
 public class ConsentController {
@@ -35,9 +38,15 @@ public class ConsentController {
             Principal principal,
             Model model) {
 
-        Set<String> scopesToApprove = StringUtils.hasText(scope)
-                ? StringUtils.commaDelimitedListToSet(scope)
-                : Collections.emptySet();
+        Set<String> scopesToApprove;
+        if (StringUtils.hasText(scope)) {
+            // Support both standard OAuth2 space-delimited and fallback comma-delimited scopes
+            scopesToApprove = Arrays.stream(scope.split("[\\s,]+"))
+                    .filter(StringUtils::hasText)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+        } else {
+            scopesToApprove = Collections.emptySet();
+        }
 
         Map<String, String> scopesWithDescriptions = new LinkedHashMap<>();
         for (String s : scopesToApprove) {
