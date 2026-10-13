@@ -4,11 +4,15 @@ import com.zaalima.iam.service.MfaChallengeAuthenticationService;
 import com.zaalima.iam.service.MfaPendingAuthenticationService;
 import com.zaalima.iam.service.AuditLogService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,6 +31,8 @@ public class MfaAuthenticationController {
 
     private final AuditLogService auditLogService;
 
+    private final RequestCache requestCache = new HttpSessionRequestCache();
+
     @GetMapping("/mfa")
     public String showMfaPage() {
         return "mfa";
@@ -36,6 +42,7 @@ public class MfaAuthenticationController {
     public String verifyMfa(
             @RequestParam String code,
             HttpServletRequest request,
+            HttpServletResponse response,
             RedirectAttributes redirectAttributes) {
 
         Authentication pendingAuthentication =
@@ -61,7 +68,6 @@ public class MfaAuthenticationController {
                     "LOGIN_FAILED_MFA",
                     "User authentication failed because MFA verification was invalid or expired"
             );
-
             redirectAttributes.addFlashAttribute(
                     "error",
                     "Invalid or expired MFA code."
@@ -80,7 +86,7 @@ public class MfaAuthenticationController {
                 .saveContext(
                         context,
                         request,
-                        null
+                        response
                 );
 
         mfaPendingAuthenticationService.remove(username);
@@ -91,7 +97,23 @@ public class MfaAuthenticationController {
                 "User authentication completed successfully after MFA verification"
         );
 
-        return "redirect:/";
+        if (response != null) {
+            SavedRequest savedRequest = requestCache.getRequest(request, response);
+            if (savedRequest != null) {
+                String targetUrl = savedRequest.getRedirectUrl();
+                requestCache.removeRequest(request, response);
+                return "redirect:" + targetUrl;
+            }
+        }
+
+        return "redirect:/api/users/me";
+    }
+
+    public String verifyMfa(
+            String code,
+            HttpServletRequest request,
+            RedirectAttributes redirectAttributes) {
+        return verifyMfa(code, request, null, redirectAttributes);
     }
 
     private Authentication getPendingAuthentication(
