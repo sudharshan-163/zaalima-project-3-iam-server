@@ -25,9 +25,14 @@ public class MfaAuthenticationSuccessHandler
     private final MfaPendingAuthenticationService
             mfaPendingAuthenticationService;
 
-    private final SavedRequestAwareAuthenticationSuccessHandler
-            defaultSuccessHandler =
-            new SavedRequestAwareAuthenticationSuccessHandler();
+    private final SavedRequestAwareAuthenticationSuccessHandler defaultSuccessHandler = initDefaultSuccessHandler();
+
+    private static SavedRequestAwareAuthenticationSuccessHandler initDefaultSuccessHandler() {
+        SavedRequestAwareAuthenticationSuccessHandler handler =
+                new SavedRequestAwareAuthenticationSuccessHandler();
+        handler.setDefaultTargetUrl("/api/users/me");
+        return handler;
+    }
 
     @Override
     public void onAuthenticationSuccess(
