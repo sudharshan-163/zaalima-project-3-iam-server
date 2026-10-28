@@ -45,8 +45,7 @@ public class SecurityConfig {
                         )
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/users/register",
+                        .requestMatchers("/api/tokens/**", "/api/users/register",
                                 "/mfa"
                         ).permitAll()
                         .anyRequest().authenticated()
@@ -107,6 +106,8 @@ public class SecurityConfig {
         return configuration.getAuthenticationManager();
     }
 }
+
+
 
 
 
