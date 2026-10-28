@@ -46,4 +46,21 @@ public class User {
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
+    @Column(name = "failed_login_attempts", nullable = false)
+    private int failedLoginAttempts = 0;
+
+    @Column(name = "account_non_locked", nullable = false)
+    private boolean accountNonLocked = true;
+
+    @Column(name = "lockout_expiration")
+    private java.time.LocalDateTime lockoutExpiration;
+
+    public boolean isAccountNonLocked() {
+        if (this.lockoutExpiration != null && java.time.LocalDateTime.now().isAfter(this.lockoutExpiration)) {
+            this.accountNonLocked = true;
+            this.failedLoginAttempts = 0;
+            this.lockoutExpiration = null;
+        }
+        return this.accountNonLocked;
+    }
 }
