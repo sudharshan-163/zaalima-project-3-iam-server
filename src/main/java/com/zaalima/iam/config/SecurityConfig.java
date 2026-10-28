@@ -29,8 +29,7 @@ public class SecurityConfig {
     private final RedisJwtAuthenticationConverter redisJwtAuthenticationConverter;
 
     @Bean
-    @ConditionalOnBean(LoginRateLimitService.class)
-    public LoginRateLimitFilter loginRateLimitFilter(LoginRateLimitService loginRateLimitService) {
+        public LoginRateLimitFilter loginRateLimitFilter(LoginRateLimitService loginRateLimitService) {
         return new LoginRateLimitFilter(loginRateLimitService);
     }
 
@@ -40,6 +39,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers(
+                                "/login",
                                 "/api/users/register",
                                 "/api/tokens/**"
                         )
@@ -107,6 +107,8 @@ public class SecurityConfig {
         return configuration.getAuthenticationManager();
     }
 }
+
+
 
 
 

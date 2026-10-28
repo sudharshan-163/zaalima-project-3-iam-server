@@ -24,7 +24,7 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
 
         boolean isLoginRequest =
                 HttpMethod.POST.matches(request.getMethod())
-                        && "/login".equals(request.getRequestURI());
+                        && ("/login".equals(request.getRequestURI()) || "/login".equals(request.getServletPath()));
 
         if (!isLoginRequest) {
             filterChain.doFilter(request, response);
@@ -56,5 +56,6 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
         return request.getRemoteAddr();
     }
 }
+
 
 
