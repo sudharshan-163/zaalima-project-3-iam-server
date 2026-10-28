@@ -34,9 +34,11 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, org.springframework.beans.factory.ObjectProvider<LoginRateLimitFilter> loginRateLimitFilterProvider) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+            DaoAuthenticationProvider authenticationProvider, org.springframework.beans.factory.ObjectProvider<LoginRateLimitFilter> loginRateLimitFilterProvider) throws Exception {
 
         http
+                .authenticationProvider(authenticationProvider)
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers(
                                 "/login",
@@ -106,6 +108,7 @@ public class SecurityConfig {
         return configuration.getAuthenticationManager();
     }
 }
+
 
 
 
