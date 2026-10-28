@@ -35,7 +35,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, org.springframework.beans.factory.ObjectProvider<LoginRateLimitFilter> loginRateLimitFilterProvider) throws Exception {
 
         http
                 .csrf(csrf -> csrf
@@ -74,6 +74,13 @@ public class SecurityConfig {
                         )
                 );
 
+                loginRateLimitFilterProvider.ifAvailable(filter ->
+                http.addFilterBefore(
+                        filter,
+                        org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class
+                )
+        );
+
         return http.build();
     }
 
@@ -100,6 +107,8 @@ public class SecurityConfig {
         return configuration.getAuthenticationManager();
     }
 }
+
+
 
 
 
