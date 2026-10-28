@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zaalima IAM - Control Center</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #0b0f19;
+            --card: #151e32;
+            --card-sub: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+        
+        /* NAVBAR */
+        .navbar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px 32px; background: var(--card); border-bottom: 1px solid var(--border);
+        }
+        .brand { font-size: 22px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 8px; }
+        .nav-actions { display: flex; align-items: center; gap: 15px; }
+        .logout-btn {
+            background: var(--danger); color: white; padding: 8px 16px; border-radius: 6px;
+            text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.2s;
+        }
+        .logout-btn:hover { background: #dc2626; }
+
+        /* LAYOUT */
+        .main-container { display: flex; flex: 1; }
+        .sidebar {
+            width: 250px; background: #0f172a; border-right: 1px solid var(--border); padding: 20px 0;
+        }
+        .nav-item {
+            padding: 14px 24px; cursor: pointer; color: var(--text-muted); font-weight: 600;
+            display: flex; align-items: center; gap: 10px; transition: 0.2s;
+        }
+        .nav-item:hover, .nav-item.active {
+            background: var(--card); color: #38bdf8; border-left: 4px solid #38bdf8;
+        }
+        .content { flex: 1; padding: 32px; overflow-y: auto; }
+
+        /* CARDS & TABLES */
+        .panel { display: none; }
+        .panel.active { display: block; }
+        .card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 24px; margin-bottom: 24px;
+        }
+        h2 { font-size: 20px; color: #38bdf8; margin-bottom: 16px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .info-pill {
+            background: var(--card-sub); border: 1px solid var(--border); padding: 16px; border-radius: 8px;
+        }
+        .info-pill label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; }
+        .info-pill value { display: block; font-size: 16px; font-weight: 600; color: #fff; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
+        th { background: #1e293b; color: var(--text-muted); text-transform: uppercase; font-size: 12px; }
+        tr:hover { background: rgba(255, 255, 255, 0.02); }
+
+        .btn {
+            background: var(--primary); color: white; border: none; padding: 8px 16px;
+            border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s;
+        }
+        .btn:hover { background: var(--primary-hover); }
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-warning { background: var(--warning); color: #000; }
+        
+        .badge {
+            padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;
+        }
+        .badge-success { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+        .badge-danger { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+
+        .search-bar {
+            display: flex; gap: 12px; margin-bottom: 16px;
+        }
+        .search-bar input {
+            flex: 1; padding: 10px 14px; background: #0f172a; border: 1px solid var(--border);
+            border-radius: 6px; color: white; outline: none;
+        }
+        .search-bar input:focus { border-color: #38bdf8; }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <div class="brand">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        Zaalima IAM Console
+    </div>
+    <div class="nav-actions">
+        <span id="activeUserGreeting" style="font-size: 14px; color: var(--text-muted);">Loading session...</span>
+        <a href="/logout" class="logout-btn">Sign Out</a>
+    </div>
+</div>
+
+<div class="main-container">
+    <div class="sidebar">
+        <div class="nav-item active" onclick="showPanel('profilePanel')">👤 My Identity</div>
+        <div class="nav-item" onclick="showPanel('usersPanel')">👥 User Directory</div>
+        <div class="nav-item" onclick="showPanel('auditPanel')">📜 Security Audit Logs</div>
+        <div class="nav-item" onclick="showPanel('mfaPanel')">🔐 MFA & Security</div>
+        <div class="nav-item" onclick="showPanel('apiPanel')">⚡ API Explorer</div>
+    </div>
+
+    <div class="content">
+        <!-- 1. USER PROFILE PANEL -->
+        <div id="profilePanel" class="panel active">
+            <div class="card">
+                <h2>Authenticated User Profile</h2>
+                <div class="grid-2">
+                    <div class="info-pill"><label>Username</label><value id="profUsername">user</value></div>
+                    <div class="info-pill"><label>Primary Email</label><value id="profEmail">user@zaalima.com</value></div>
+                    <div class="info-pill"><label>Account Status</label><value><span class="badge badge-success">ACTIVE & UNLOCKED</span></value></div>
+                    <div class="info-pill"><label>Assigned Authorities</label><value id="profRoles">ROLE_USER</value></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. ADMIN USER DIRECTORY PANEL -->
+        <div id="usersPanel" class="panel">
+            <div class="card">
+                <h2>User Management (Admin)</h2>
+                <div class="search-bar">
+                    <input type="text" id="userSearch" placeholder="Search user by username or email...">
+                    <button class="btn" onclick="fetchUsers()">Search</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr><th>ID</th><th>Username</th><th>Email</th><th>Status</th><th>Lock Status</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody id="userTableBody">
+                        <tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Loading users from /api/admin/users...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 3. SECURITY AUDIT LOGS PANEL -->
+        <div id="auditPanel" class="panel">
+            <div class="card">
+                <h2>Security Event Audit Logs</h2>
+                <div class="search-bar">
+                    <input type="text" id="auditAction" placeholder="Filter by action (e.g. LOGIN_SUCCESS, ACCOUNT_LOCKED)...">
+                    <button class="btn" onclick="fetchAuditLogs()">Apply Filter</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr><th>Time</th><th>Action</th><th>Username</th><th>IP Address</th><th>Details</th></tr>
+                    </thead>
+                    <tbody id="auditTableBody">
+                        <tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Loading audit logs from /api/admin/audit-logs...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 4. MFA & SECURITY PANEL -->
+        <div id="mfaPanel" class="panel">
+            <div class="card">
+                <h2>Multi-Factor Authentication (TOTP)</h2>
+                <p style="color: var(--text-muted); margin-bottom: 16px;">Scan dynamic QR code or configure TOTP authenticator app.</p>
+                <div class="info-pill" style="max-width: 400px;">
+                    <label>MFA Engine</label>
+                    <value style="color: #38bdf8;">RFC 6238 TOTP Standard</value>
+                    <button class="btn" style="margin-top: 12px;" onclick="window.location.href='/mfa'">Open MFA Verification Page</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. API EXPLORER PANEL -->
+        <div id="apiPanel" class="panel">
+            <div class="card">
+                <h2>Interactive OpenAPI & Actuator</h2>
+                <p style="color: var(--text-muted); margin-bottom: 16px;">Test all 28 day backend endpoints directly in real time.</p>
+                <button class="btn" onclick="window.open('/swagger-ui/index.html', '_blank')">Launch Swagger UI</button>
+                <button class="btn" style="background:#0284c7; margin-left: 10px;" onclick="window.open('/v3/api-docs', '_blank')">View OpenAPI Spec</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showPanel(id) {
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        event.currentTarget.classList.add('active');
+
+        if (id === 'usersPanel') fetchUsers();
+        if (id === 'auditPanel') fetchAuditLogs();
+    }
+
+    async function loadIdentity() {
+        try {
+            const res = await fetch('/api/users/me');
+            if (res.ok) {
+                const u = await res.json();
+                document.getElementById('profUsername').innerText = u.username || 'user';
+                document.getElementById('profEmail').innerText = u.email || 'user@zaalima.com';
+                document.getElementById('activeUserGreeting').innerText = 'Signed in as ' + (u.username || 'User');
+            }
+        } catch(e) {}
+    }
+
+    async function fetchUsers() {
+        const tbody = document.getElementById('userTableBody');
+        try {
+            const res = await fetch('/api/admin/users');
+            if (res.ok) {
+                const data = await res.json();
+                const list = data.content || data || [];
+                tbody.innerHTML = list.map(u => `
+                    <tr>
+                        <td>${u.id || '-'}</td>
+                        <td><strong>${u.username}</strong></td>
+                        <td>${u.email}</td>
+                        <td><span class="badge ${u.enabled ? 'badge-success':'badge-danger'}">${u.enabled ? 'ENABLED':'DISABLED'}</span></td>
+                        <td><span class="badge ${u.accountNonLocked ? 'badge-success':'badge-danger'}">${u.accountNonLocked ? 'UNLOCKED':'LOCKED'}</span></td>
+                        <td>
+                            <button class="btn ${u.accountNonLocked ? 'btn-danger':'btn-warning'}" onclick="toggleLock(${u.id}, ${u.accountNonLocked})">
+                                ${u.accountNonLocked ? 'Lock Account' : 'Unlock Account'}
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } else {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#ef4444;">Admin privileges required to view user directory.</td></tr>';
+            }
+        } catch(e) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#ef4444;">Failed to fetch users.</td></tr>';
+        }
+    }
+
+    async function toggleLock(id, currentLockStatus) {
+        try {
+            const res = await fetch(`/api/admin/users/${id}/lock`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ locked: currentLockStatus })
+            });
+            if (res.ok) {
+                fetchUsers();
+            } else {
+                alert('Action restricted or unauthorized.');
+            }
+        } catch(e) { alert('Error changing lock status'); }
+    }
+
+    async function fetchAuditLogs() {
+        const tbody = document.getElementById('auditTableBody');
+        try {
+            const res = await fetch('/api/admin/audit-logs');
+            if (res.ok) {
+                const data = await res.json();
+                const logs = data.content || data || [];
+                tbody.innerHTML = logs.map(l => `
+                    <tr>
+                        <td>${l.timestamp ? new Date(l.timestamp).toLocaleString() : 'Just now'}</td>
+                        <td><strong>${l.action || 'AUTH_EVENT'}</strong></td>
+                        <td>${l.username || 'System'}</td>
+                        <td><code>${l.ipAddress || '127.0.0.1'}</code></td>
+                        <td>${l.details || 'Success'}</td>
+                    </tr>
+                `).join('');
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#ef4444;">Admin privileges required for audit logs.</td></tr>';
+            }
+        } catch(e) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#ef4444;">Failed to fetch audit logs.</td></tr>';
+        }
+    }
+
+    loadIdentity();
+</script>
+</body>
+</html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zaalima IAM - Portal</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #0b0f19;
+            --card-bg: #151e32;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --success: #22c55e;
+            --error: #ef4444;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body {
+            background: radial-gradient(circle at top, #1e1b4b, var(--bg));
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 440px;
+            padding: 32px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+        .header { text-align: center; margin-bottom: 24px; }
+        .header h1 { font-size: 26px; font-weight: 700; color: #38bdf8; margin-bottom: 6px; }
+        .header p { font-size: 14px; color: var(--text-muted); }
+
+        .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-weight: 600;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab.active {
+            color: #38bdf8;
+            border-color: #38bdf8;
+        }
+
+        .form-group { margin-bottom: 16px; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); }
+        input {
+            width: 100%;
+            padding: 11px 14px;
+            background: #0b0f19;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus { border-color: #38bdf8; }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 8px;
+        }
+        .btn:hover { background: var(--primary-hover); }
+
+        .alert {
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .alert-error { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid var(--error); }
+        .alert-success { background: rgba(34, 197, 94, 0.15); color: #86efac; border: 1px solid var(--success); }
+
+        .links {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 14px;
+            font-size: 13px;
+        }
+        .links a { color: #38bdf8; text-decoration: none; cursor: pointer; }
+        .links a:hover { text-decoration: underline; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Zaalima IAM</h1>
+        <p>Enterprise Identity & Access Management</p>
+    </div>
+
+    <div id="alertBox" class="alert"></div>
+
+    <!-- TABS -->
+    <div class="tabs" id="tabHeader">
+        <div class="tab active" id="tabSignIn" onclick="switchTab('signin')">Sign In</div>
+        <div class="tab" id="tabSignUp" onclick="switchTab('signup')">Sign Up</div>
+    </div>
+
+    <!-- SIGN IN FORM -->
+    <form id="signInForm" action="/login" method="POST">
+        <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="loginUsername" name="username" required placeholder="Enter username">
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="loginPassword" name="password" required placeholder="Enter password">
+        </div>
+        <button type="submit" class="btn">Sign In</button>
+        <div class="links">
+            <a onclick="showForgotPassword()">Forgot Password?</a>
+            <a onclick="switchTab('signup')">Create Account</a>
+        </div>
+    </form>
+
+    <!-- SIGN UP FORM -->
+    <form id="signUpForm" class="hidden" onsubmit="handleManualSignUp(event)">
+        <div class="form-group">
+            <label>Choose Username</label>
+            <input type="text" id="regUsername" required placeholder="e.g. sindhu123">
+        </div>
+        <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="regEmail" required placeholder="you@domain.com">
+        </div>
+        <div class="form-group">
+            <label>Choose Password</label>
+            <input type="password" id="regPassword" required placeholder="Minimum 8 characters">
+        </div>
+        <button type="submit" id="btnSignUp" class="btn" style="background:#0284c7;">Register to Database</button>
+        <div class="links" style="justify-content: center; margin-top: 16px;">
+            <span>Already have an account? <a onclick="switchTab('signin')">Sign In</a></span>
+        </div>
+    </form>
+
+    <!-- FORGOT PASSWORD FORM -->
+    <div id="forgotPasswordForm" class="hidden">
+        <div class="form-group">
+            <label>Registered Email</label>
+            <input type="email" id="resetEmail" required placeholder="Enter email to get reset token">
+        </div>
+        <button type="button" class="btn" onclick="handleForgotPassword()" style="background:#7c3aed;">Generate Reset Token</button>
+        
+        <div id="resetSection" class="hidden" style="margin-top: 18px; border-top: 1px solid var(--border); padding-top: 16px;">
+            <div class="form-group">
+                <label>Reset Token</label>
+                <input type="text" id="tokenField" placeholder="Paste generated token">
+            </div>
+            <div class="form-group">
+                <label>New Password</label>
+                <input type="password" id="newPasswordField" placeholder="Enter new password">
+            </div>
+            <button type="button" class="btn" onclick="handleConfirmReset()" style="background:#16a34a;">Confirm Password Reset</button>
+        </div>
+
+        <div class="links" style="justify-content: center; margin-top: 16px;">
+            <a onclick="switchTab('signin')">Back to Sign In</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showAlert(msg, isError = true) {
+        const box = document.getElementById('alertBox');
+        box.innerText = msg;
+        box.className = 'alert ' + (isError ? 'alert-error' : 'alert-success');
+        box.style.display = 'block';
+    }
+
+    function switchTab(type) {
+        document.getElementById('alertBox').style.display = 'none';
+        document.getElementById('forgotPasswordForm').classList.add('hidden');
+        document.getElementById('tabHeader').classList.remove('hidden');
+
+        const tabIn = document.getElementById('tabSignIn');
+        const tabUp = document.getElementById('tabSignUp');
+        const formIn = document.getElementById('signInForm');
+        const formUp = document.getElementById('signUpForm');
+
+        if (type === 'signin') {
+            tabIn.classList.add('active');
+            tabUp.classList.remove('active');
+            formIn.classList.remove('hidden');
+            formUp.classList.add('hidden');
+        } else {
+            tabUp.classList.add('active');
+            tabIn.classList.remove('active');
+            formUp.classList.remove('hidden');
+            formIn.classList.add('hidden');
+        }
+    }
+
+    function showForgotPassword() {
+        document.getElementById('alertBox').style.display = 'none';
+        document.getElementById('tabHeader').classList.add('hidden');
+        document.getElementById('signInForm').classList.add('hidden');
+        document.getElementById('signUpForm').classList.add('hidden');
+        document.getElementById('forgotPasswordForm').classList.remove('hidden');
+    }
+
+    async function handleManualSignUp(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnSignUp');
+        btn.innerText = 'Registering in DB...';
+        btn.disabled = true;
+
+        const payload = {
+            username: document.getElementById('regUsername').value.trim(),
+            email: document.getElementById('regEmail').value.trim(),
+            password: document.getElementById('regPassword').value
+        };
+
+        try {
+            const res = await fetch('/api/users/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                showAlert('Account registered! Enter credentials to Sign In.', false);
+                document.getElementById('loginUsername').value = payload.username;
+                document.getElementById('loginPassword').value = payload.password;
+                setTimeout(() => switchTab('signin'), 1000);
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                showAlert(errData.message || 'Username or email already exists!', true);
+            }
+        } catch (err) {
+            showAlert('Registration error connecting to server.', true);
+        } finally {
+            btn.innerText = 'Register to Database';
+            btn.disabled = false;
+        }
+    }
+
+    async function handleForgotPassword() {
+        const email = document.getElementById('resetEmail').value.trim();
+        if (!email) return showAlert('Enter registered email.', true);
+
+        try {
+            const res = await fetch('/api/users/forgot-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            if (res.ok) {
+                const data = await res.json().catch(() => ({}));
+                showAlert('Reset token generated! Enter new password below.', false);
+                document.getElementById('resetSection').classList.remove('hidden');
+                if (data.token) document.getElementById('tokenField').value = data.token;
+            } else {
+                showAlert('Email not registered.', true);
+            }
+        } catch (err) {
+            showAlert('Reset service unreachable.', true);
+        }
+    }
+
+    async function handleConfirmReset() {
+        const token = document.getElementById('tokenField').value.trim();
+        const newPassword = document.getElementById('newPasswordField').value;
+        if (!token || !newPassword) return showAlert('Please fill both fields.', true);
+
+        try {
+            const res = await fetch('/api/users/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, password: newPassword })
+            });
+            if (res.ok) {
+                showAlert('Password updated! Redirecting to login...', false);
+                setTimeout(() => switchTab('signin'), 1200);
+            } else {
+                showAlert('Invalid or expired token.', true);
+            }
+        } catch (err) {
+            showAlert('Password reset error.', true);
+        }
+    }
+
+    if (window.location.search.includes('error')) {
+        showAlert('Invalid username or password, or account is locked!', true);
+    }
+</script>
+</body>
+</html>
