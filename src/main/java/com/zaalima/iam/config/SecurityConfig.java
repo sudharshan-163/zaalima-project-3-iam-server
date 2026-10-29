@@ -20,16 +20,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Bean
-    public AuthenticationSuccessHandler customSuccessHandler() {
-        return (request, response, authentication) -> response.sendRedirect("/dashboard.html");
-    }
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             DaoAuthenticationProvider authenticationProvider,
-            AuthenticationSuccessHandler customSuccessHandler,
+            com.zaalima.iam.security.MfaAuthenticationSuccessHandler mfaSuccessHandler,
             ObjectProvider<LoginRateLimitFilter> loginRateLimitFilterProvider) throws Exception {
 
         http
@@ -40,7 +37,7 @@ public class SecurityConfig {
                     "/login",
                     "/login.html",
                     "/error",
-                    "/dashboard.html",
+                    "/dashboard.html", "/mfa", "/mfa.html",
                     "/index.html",
                     "/api/users/register",
                     "/api/users/forgot-password",
@@ -57,7 +54,7 @@ public class SecurityConfig {
             .formLogin(form -> form
                 .loginPage("/login.html")
                 .loginProcessingUrl("/login")
-                .successHandler(customSuccessHandler)
+                .successHandler(mfaSuccessHandler)
                 .failureUrl("/login.html?error=true")
                 .permitAll()
             )

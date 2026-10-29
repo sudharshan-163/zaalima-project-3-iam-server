@@ -30,7 +30,7 @@ public class MfaAuthenticationSuccessHandler
     private static SavedRequestAwareAuthenticationSuccessHandler initDefaultSuccessHandler() {
         SavedRequestAwareAuthenticationSuccessHandler handler =
                 new SavedRequestAwareAuthenticationSuccessHandler();
-        handler.setDefaultTargetUrl("/api/users/me");
+        handler.setDefaultTargetUrl("/dashboard.html");
         return handler;
     }
 
