@@ -250,7 +250,7 @@
                 setTimeout(() => switchTab('signin'), 1000);
             } else {
                 const errData = await res.json().catch(() => ({}));
-                showAlert(errData.message || 'Username or email already exists!', true);
+                showAlert(errData.message || errData.error || errData.rootCause || ('Server Error: ' + res.status), true);
             }
         } catch (err) {
             showAlert('Registration error connecting to server.', true);
