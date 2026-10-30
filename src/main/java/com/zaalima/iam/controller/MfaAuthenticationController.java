@@ -53,7 +53,7 @@ public class MfaAuthenticationController {
                     "error",
                     "MFA session expired. Please login again."
             );
-            return "redirect:/login";
+            return "redirect:/login.html";
         }
 
         String username = pendingAuthentication.getName();
@@ -72,7 +72,7 @@ public class MfaAuthenticationController {
                     "error",
                     "Invalid or expired MFA code."
             );
-            return "redirect:/mfa";
+            return "redirect:/mfa?error=true";
         }
 
         SecurityContext context =
@@ -106,7 +106,7 @@ public class MfaAuthenticationController {
             }
         }
 
-        return "redirect:/api/users/me";
+        return "redirect:/dashboard.html";
     }
 
     public String verifyMfa(
@@ -130,3 +130,6 @@ public class MfaAuthenticationController {
                 .get(username.toString());
     }
 }
+
+
+

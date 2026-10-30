@@ -15,7 +15,7 @@ public class MfaController {
 
     private final MfaService mfaService;
 
-    @PostMapping("/setup")
+    @PostMapping({"/setup", "/generate"})
     public ResponseEntity<String> setup(
             Authentication authentication) {
 
@@ -75,3 +75,4 @@ public class MfaController {
         return ResponseEntity.ok("MFA disabled");
     }
 }
+

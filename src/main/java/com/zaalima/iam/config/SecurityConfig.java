@@ -1,84 +1,76 @@
 package com.zaalima.iam.config;
 
 import com.zaalima.iam.security.LoginRateLimitFilter;
-import com.zaalima.iam.security.MfaAuthenticationSuccessHandler;
 import com.zaalima.iam.security.RedisJwtAuthenticationConverter;
 import com.zaalima.iam.service.CustomUserDetailsService;
 import com.zaalima.iam.service.LoginRateLimitService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableMethodSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final MfaAuthenticationSuccessHandler mfaAuthenticationSuccessHandler;
-    private final RedisJwtAuthenticationConverter redisJwtAuthenticationConverter;
+
 
     @Bean
-        public LoginRateLimitFilter loginRateLimitFilter(LoginRateLimitService loginRateLimitService) {
-        return new LoginRateLimitFilter(loginRateLimitService);
-    }
-
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, org.springframework.beans.factory.ObjectProvider<LoginRateLimitFilter> loginRateLimitFilterProvider) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            DaoAuthenticationProvider authenticationProvider,
+            com.zaalima.iam.security.MfaAuthenticationSuccessHandler mfaSuccessHandler,
+            ObjectProvider<LoginRateLimitFilter> loginRateLimitFilterProvider) throws Exception {
 
         http
-                .csrf(csrf -> csrf
-                        .ignoringRequestMatchers(
-                                "/login",
-                                "/api/users/register",
-                                "/api/tokens/**"
-                        )
-                )
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/tokens/**", "/api/users/register",
-                                "/mfa"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
-                .oauth2ResourceServer(resourceServer ->
-                        resourceServer.jwt(jwt ->
-                                jwt.jwtAuthenticationConverter(redisJwtAuthenticationConverter)
-                        )
-                )
-                .formLogin(form -> form
-                        .successHandler(mfaAuthenticationSuccessHandler)
-                        .permitAll()
-                )
-                .exceptionHandling(exceptions -> exceptions
-                        .defaultAuthenticationEntryPointFor(
-                                new LoginUrlAuthenticationEntryPoint("/login"),
-                                new AntPathRequestMatcher("/oauth2/consent")
-                        )
-                        .defaultAuthenticationEntryPointFor(
-                                new LoginUrlAuthenticationEntryPoint("/login"),
-                                request -> {
-                                    String authHeader = request.getHeader("Authorization");
-                                    return authHeader == null || !authHeader.startsWith("Bearer ");
-                                }
-                        )
-                );
+            .csrf(csrf -> csrf.disable())
+            .requestCache(cache -> cache.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(
+                    "/login",
+                    "/login.html",
+                    "/error",
+                    "/dashboard.html", "/mfa", "/mfa.html",
+                    "/index.html",
+                    "/api/users/register",
+                    "/api/users/forgot-password",
+                    "/api/users/reset-password",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html",
+                    "/v3/api-docs/**",
+                    "/h2-console/**",
+                    "/*.css",
+                    "/*.js"
+                ).permitAll()
+                .anyRequest().authenticated()
+            )
+            .formLogin(form -> form
+                .loginPage("/login.html")
+                .loginProcessingUrl("/login")
+                .successHandler(mfaSuccessHandler)
+                .failureUrl("/login.html?error=true")
+                .permitAll()
+            )
+            .logout(logout -> logout
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/login.html?logout=true")
+                .permitAll()
+            )
+            .headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
-                loginRateLimitFilterProvider.ifAvailable(filter ->
-                http.addFilterBefore(
-                        filter,
-                        org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class
-                )
-        );
+        http.authenticationProvider(authenticationProvider);
+
+        LoginRateLimitFilter rateLimitFilter = loginRateLimitFilterProvider.getIfAvailable();
+        if (rateLimitFilter != null) {
+            http.addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class);
+        }
 
         return http.build();
     }
@@ -92,26 +84,9 @@ public class SecurityConfig {
     public DaoAuthenticationProvider authenticationProvider(
             CustomUserDetailsService userDetailsService,
             PasswordEncoder passwordEncoder) {
-
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
         return provider;
     }
-
-    @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration configuration) throws Exception {
-
-        return configuration.getAuthenticationManager();
-    }
 }
-
-
-
-
-
-
-
-
-
