@@ -365,7 +365,7 @@
             const tbody = document.getElementById('userTableBody');
             tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading users...</td></tr>';
             try {
-                const res = await fetch('/api/admin/users').catch(() => null);
+                const res = await fetch('/api/users').catch(() => null);
                 let list = [];
                 if (res && res.ok) {
                     list = await res.json();
@@ -378,7 +378,7 @@
                         <td>#${u.id || 1}</td>
                         <td style="font-weight:600; color:#fff;">${u.username}</td>
                         <td>${u.email || 'N/A'}</td>
-                        <td><span style="color:${u.enabled ? 'var(--success)' : 'var(--danger)'};">${u.enabled ? 'ACTIVE' : 'LOCKED'}</span></td>
+                        <td><span style="color:${(log.success === true || log.status === 'SUCCESS') ? 'var(--success)' : 'var(--danger)'};">${log.success !== undefined ? (log.success ? 'SUCCESS' : 'FAILED') : (log.status || 'UNKNOWN')}</span></td>
                         <td>
                             <button class="btn btn-sm btn-danger" onclick="toggleUserLock('${u.username}')">Toggle Lock</button>
                         </td>
@@ -390,8 +390,17 @@
         }
 
         async function toggleUserLock(uname) {
-            showToast('User status updated for ' + uname);
-            setTimeout(loadUsers, 500);
+            try {
+                const res = await fetch('/api/users/' + encodeURIComponent(uname) + '/toggle-status', { method: 'POST' });
+                if (res.ok) {
+                    showToast('Status successfully toggled for ' + uname);
+                    loadUsers();
+                } else {
+                    showToast('Failed to toggle status', true);
+                }
+            } catch(e) {
+                showToast('Error updating user status', true);
+            }
         }
 
         // AUDIT LOGS ACTIONS
@@ -399,9 +408,10 @@
             const tbody = document.getElementById('auditTableBody');
             tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading audit logs...</td></tr>';
             try {
-                const res = await fetch('/api/admin/audit-logs').catch(() => null);
+                const res = await fetch('/api/admin/audit-logs?size=50').catch(() => null);
                 if (res && res.ok) {
-                    allAuditLogs = await res.json();
+                    const data = await res.json();
+                    allAuditLogs = data.content ? data.content : data;
                 } else {
                     allAuditLogs = [
                         { timestamp: new Date().toISOString(), username: currentUser ? currentUser.username : 'User', action: 'USER_LOGIN', ipAddress: '127.0.0.1', status: 'SUCCESS' },
@@ -420,9 +430,9 @@
                 <tr>
                     <td style="color:var(--text-muted); font-size:12px;">${l.timestamp ? l.timestamp.replace('T', ' ').substring(0, 19) : '-'}</td>
                     <td style="font-weight:600; color:#fff;">${l.username || 'System'}</td>
-                    <td><b style="color:var(--primary);">${l.action}</b></td>
+                    <td><b style="color:var(--primary);">${l.eventType || l.action || 'EVENT'}</b></td>
                     <td style="font-family:monospace;">${l.ipAddress || '127.0.0.1'}</td>
-                    <td><span style="color:${l.status === 'SUCCESS' ? 'var(--success)' : 'var(--danger)'};">${l.status}</span></td>
+                    <td><span style="color:${(l.success === true || l.status === 'SUCCESS') ? 'var(--success)' : 'var(--danger)'};">${l.success !== undefined ? (l.success ? 'SUCCESS' : 'FAILED') : (l.status || 'UNKNOWN')}</span></td>
                 </tr>
             `).join('');
         }
@@ -431,7 +441,7 @@
             const q = document.getElementById('auditSearchInput').value.toLowerCase();
             const filtered = allAuditLogs.filter(l => 
                 (l.username && l.username.toLowerCase().includes(q)) || 
-                (l.action && l.action.toLowerCase().includes(q))
+                ((l.eventType && l.eventType.toLowerCase().includes(q)) || (l.action && l.action.toLowerCase().includes(q)))
             );
             renderAuditLogs(filtered);
         }
@@ -441,4 +451,9 @@
     </script>
 </body>
 </html>
+
+
+
+
+
 

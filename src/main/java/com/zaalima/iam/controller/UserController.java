@@ -126,4 +126,13 @@ public class UserController {
 
         return ResponseEntity.noContent().build();
     }
+    @GetMapping
+    public ResponseEntity<java.util.List<UserProfileResponse>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    @PostMapping("/{username}/toggle-status")
+    public ResponseEntity<UserProfileResponse> toggleStatus(@PathVariable String username) {
+        return ResponseEntity.ok(userService.toggleUserStatusByUsername(username));
+    }
 }

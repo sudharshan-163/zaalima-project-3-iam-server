@@ -401,4 +401,23 @@ public class UserService {
             user.isEnabled()
         );
     }
+    public java.util.List<UserProfileResponse> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(this::toProfileResponse)
+                .toList();
+    }
+
+    public UserProfileResponse toggleUserStatusByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        user.setEnabled(!user.isEnabled());
+        user.setAccountNonLocked(user.isEnabled());
+        User saved = userRepository.save(user);
+        auditLogService.logSuccess(
+                saved.getUsername(),
+                saved.isEnabled() ? USER_ENABLED : USER_DISABLED,
+                "User status toggled to: " + (saved.isEnabled() ? "ACTIVE" : "LOCKED")
+        );
+        return toProfileResponse(saved);
+    }
 }

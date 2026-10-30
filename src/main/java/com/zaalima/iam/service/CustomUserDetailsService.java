@@ -35,7 +35,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         for (Role role : user.getRoles()) {
             authorities.add(
-                    new SimpleGrantedAuthority("ROLE_" + role.getName())
+                    new SimpleGrantedAuthority(role.getName().startsWith("ROLE_") ? role.getName() : "ROLE_" + role.getName())
             );
 
             role.getAuthorities().forEach(authority ->
@@ -53,3 +53,4 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .build();
     }
 }
+
